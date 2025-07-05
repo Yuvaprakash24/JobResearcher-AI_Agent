@@ -23,6 +23,7 @@ export interface JobPosting {
   benefits: string[];
   job_type?: string;
   experience_level?: string;
+  required_experience_years?: number;
   posted_date?: string;
   apply_url?: string;
   company_rating?: number;

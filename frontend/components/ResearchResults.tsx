@@ -128,6 +128,11 @@ const ResearchResults: React.FC<ResearchResultsProps> = ({ results, searchData }
                       {job.experience_level.replace('_', ' ').toUpperCase()}
                     </span>
                   )}
+                  {job.required_experience_years !== undefined && job.required_experience_years !== null && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      {job.required_experience_years === 0 ? 'No Experience Required' : `${job.required_experience_years}+ Years Required`}
+                    </span>
+                  )}
                   {job.company_rating && (
                     <div className="flex items-center space-x-1">
                       <Star className="w-4 h-4 text-yellow-500 fill-current" />

@@ -49,11 +49,11 @@ class SerpAPIService:
             
             # Add job type filter
             if request.job_type:
-                params["job_type"] = request.job_type.value
+                params["job_type"] = request.job_type.value if hasattr(request.job_type, 'value') else request.job_type
             
             # Add experience level filter
             if request.experience_level:
-                params["experience_level"] = request.experience_level.value
+                params["experience_level"] = request.experience_level.value if hasattr(request.experience_level, 'value') else request.experience_level
             
             logger.info(f"Searching jobs with query: {query}")
             
@@ -77,7 +77,16 @@ class SerpAPIService:
                 logger.warning("No job postings found for the search criteria.")
             
             logger.info(f"Found {len(job_postings)} job postings")
-            return job_postings
+            
+            # Filter jobs to only include those posted within the last 15 days
+            filtered_jobs = self._filter_jobs_by_date(job_postings, days_limit=15)
+            
+            # Filter jobs based on user's experience level
+            experience_matched_jobs = self._filter_jobs_by_experience(filtered_jobs, request)
+            
+            logger.info(f"Filtered {len(job_postings)} jobs to {len(filtered_jobs)} jobs posted within last 15 days")
+            logger.info(f"Experience matching: {len(filtered_jobs)} jobs to {len(experience_matched_jobs)} jobs matching user experience")
+            return experience_matched_jobs
             
         except Exception as e:
             logger.error(f"Error searching jobs: {str(e)}")
@@ -141,6 +150,7 @@ class SerpAPIService:
                     benefits=self._extract_benefits(job_data),
                     job_type=job_data.get("job_type", ""),
                     experience_level=job_data.get("experience_level", ""),
+                    required_experience_years=self._extract_required_experience_years(job_data),
                     posted_date=job_data.get("posted_at", ""),
                     apply_url=apply_url,
                     company_rating=job_data.get("company_rating", None)
@@ -153,11 +163,7 @@ class SerpAPIService:
                 logger.warning(f"Error parsing job result: {str(e)} - Data: {job_data}")
                 continue
         
-        # Filter jobs to only include those posted within the last 15 days
-        filtered_jobs = self._filter_jobs_by_date(job_postings, days_limit=15)
-        
-        logger.info(f"Filtered {len(job_postings)} jobs to {len(filtered_jobs)} jobs posted within last 15 days")
-        return filtered_jobs
+        return job_postings
     
     def _extract_salary(self, job_data: Dict[str, Any]) -> Optional[str]:
         """Extract salary information from job data"""
@@ -419,5 +425,147 @@ class SerpAPIService:
         except Exception as e:
             logger.error(f"Error getting company info: {str(e)}")
             return {"name": company_name, "error": str(e)}
+    
+    def _extract_required_experience_years(self, job_data: Dict[str, Any]) -> Optional[int]:
+        """Extract required experience years from job data"""
+        title = job_data.get("title", "").lower()
+        description = job_data.get("description", "").lower()
+        
+        # First, look for explicit year mentions in description
+        experience_years = self._extract_years_from_text(description)
+        if experience_years is not None:
+            return experience_years
+        
+        # If no explicit years, check title for level keywords
+        title_years = self._map_level_keywords_to_years(title)
+        if title_years is not None:
+            return title_years
+        
+        # Finally, check description for level keywords
+        desc_years = self._map_level_keywords_to_years(description)
+        if desc_years is not None:
+            return desc_years
+        
+        # Default to 0 years if nothing found
+        return 0
+    
+    def _extract_years_from_text(self, text: str) -> Optional[int]:
+        """Extract years of experience from text using regex patterns"""
+        # Pattern: "4+ years", "3-5 years", "minimum 2 years", etc.
+        patterns = [
+            r'(\d+)\+?\s*years?\s*(?:of\s*)?experience',
+            r'(\d+)\s*to\s*\d+\s*years?\s*(?:of\s*)?experience',
+            r'minimum\s*(\d+)\s*years?',
+            r'at least\s*(\d+)\s*years?',
+            r'(\d+)\s*years?\s*minimum',
+            r'(\d+)\s*years?\s*or\s*more',
+            r'(\d+)\s*years?\s*in\s*',
+            r'(\d+)\s*years?\s*with\s*',
+            r'(\d+)\s*years?\s*relevant',
+            r'(\d+)\s*years?\s*professional',
+            r'(\d+)\s*years?\s*working',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                return int(match.group(1))
+        
+        return None
+    
+    def _map_level_keywords_to_years(self, text: str) -> Optional[int]:
+        """Map job level keywords to experience years"""
+        # Keywords to experience years mapping
+        keyword_mapping = {
+            # Entry level keywords
+            'junior': 1,
+            'entry': 0,
+            'entry-level': 0,
+            'entry level': 0,
+            'trainee': 0,
+            'intern': 0,
+            'graduate': 0,
+            'fresher': 0,
+            'associate': 1,
+            'beginner': 0,
+            
+            # Mid level keywords
+            'mid': 3,
+            'mid-level': 3,
+            'mid level': 3,
+            'intermediate': 3,
+            'experienced': 3,
+            'specialist': 4,
+            
+            # Senior level keywords
+            'senior': 6,
+            'sr': 6,
+            'lead': 7,
+            'principal': 8,
+            'staff': 8,
+            'architect': 8,
+            'expert': 7,
+            'advanced': 6,
+            
+            # Executive level keywords
+            'director': 10,
+            'head': 10,
+            'manager': 8,
+            'chief': 12,
+            'vp': 12,
+            'vice president': 12,
+            'executive': 10,
+        }
+        
+        # Check for keywords in the text
+        for keyword, years in keyword_mapping.items():
+            if keyword in text:
+                return years
+        
+        return None
+    
+    def _filter_jobs_by_experience(self, job_postings: List[JobPosting], request: JobResearchRequest) -> List[JobPosting]:
+        """Filter job postings based on user's experience level"""
+        if not job_postings:
+            return job_postings
+        
+        experience_level = request.experience_level
+        if not experience_level:
+            return job_postings
+        
+        # Map user's experience level to years
+        user_experience_years = self._map_experience_level_to_years(experience_level)
+        
+        filtered_jobs = []
+        
+        for job in job_postings:
+            if self._is_job_suitable_for_experience(job, user_experience_years):
+                filtered_jobs.append(job)
+        
+        return filtered_jobs
+    
+    def _map_experience_level_to_years(self, experience_level: str) -> int:
+        """Map experience level to approximate years of experience"""
+        level_mapping = {
+            'entry_level': 1,
+            'mid_level': 4,
+            'senior_level': 8,
+            'executive': 12
+        }
+        return level_mapping.get(experience_level, 0)
+    
+    def _is_job_suitable_for_experience(self, job: JobPosting, user_years: int) -> bool:
+        """Check if a job is suitable for user's experience level"""
+        required_years = job.required_experience_years
+        
+        if required_years is None:
+            # If no specific requirement, include the job
+            return True
+        
+        # Allow some flexibility: user can apply for jobs requiring up to 2 years more than their experience
+        # or any job requiring less experience
+        flexibility_buffer = 2
+        
+        return required_years <= user_years + flexibility_buffer
     
  

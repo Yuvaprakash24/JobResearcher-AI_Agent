@@ -50,6 +50,7 @@ class JobPosting(BaseModel):
     benefits: List[str] = []
     job_type: Optional[str] = None
     experience_level: Optional[str] = None
+    required_experience_years: Optional[int] = None
     posted_date: Optional[str] = None
     apply_url: Optional[str] = None
     company_rating: Optional[float] = None
