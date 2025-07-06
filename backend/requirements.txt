@@ -1,0 +1,2 @@
+# Delegate to project root requirements
+-r ../requirements.txt 
