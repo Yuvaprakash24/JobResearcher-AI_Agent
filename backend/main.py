@@ -10,7 +10,6 @@ import asyncio
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-from config import settings  # Import application settings
 
 from agents.job_research_agent import JobResearchAgent
 from models.job_models import JobResearchRequest, JobResearchResponse
@@ -28,11 +27,7 @@ app = FastAPI(
 )
 
 # Configure allowed origins for CORS
-allowed_origins = ["http://localhost:3000"]
-
-# Add frontend URL from environment/settings if provided
-if settings.frontend_url and settings.frontend_url not in allowed_origins:
-    allowed_origins.append(settings.frontend_url)
+allowed_origins = ["http://localhost:3000", "https://job-researcher.vercel.app"]
 
 app.add_middleware(
     CORSMiddleware,
