@@ -21,7 +21,8 @@ class OpenRouterService:
             raise ValueError("OPENROUTER_API_KEY environment variable is required")
         
         self.base_url = "https://openrouter.ai/api/v1"
-        self.model = "anthropic/claude-3-haiku"  # Fast and cost-effective model
+        # self.model = "anthropic/claude-3-haiku" #fast and cost effective model
+        self.model = "deepseek/deepseek-r1:free"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
