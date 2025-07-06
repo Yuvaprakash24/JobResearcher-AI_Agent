@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building, Star, MapPin, DollarSign } from 'lucide-react';
+import { Building, Star, MapPin, DollarSign, ChevronDown, ChevronUp } from 'lucide-react';
 import { JobResearchResponse, JobResearchRequest } from '@/types/job';
 
 interface ResearchResultsProps {
@@ -8,6 +8,10 @@ interface ResearchResultsProps {
 }
 
 const ResearchResults: React.FC<ResearchResultsProps> = ({ results, searchData }) => {
+  const [showAllJobs, setShowAllJobs] = React.useState(false);
+  const displayedJobs = showAllJobs ? results.job_postings : results.job_postings.slice(0, 10);
+  const hasMoreJobs = results.job_postings.length > 10;
+
   return (
     <div className="space-y-8">
             
@@ -16,7 +20,7 @@ const ResearchResults: React.FC<ResearchResultsProps> = ({ results, searchData }
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
         <div className="flex items-center space-x-3 mb-6">
           <Star className="w-6 h-6 text-yellow-500" />
-          <h2 className="text-2xl font-bold text-gray-900">AI Recommendations</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Tailored Recommendations for Your Role as {searchData?.job_title}</h2>
         </div>
         
         <div className="space-y-4">
@@ -36,7 +40,7 @@ const ResearchResults: React.FC<ResearchResultsProps> = ({ results, searchData }
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Job Listings</h2>
         
         <div className="space-y-6">
-          {results.job_postings.slice(0, 10).map((job, index) => (
+          {displayedJobs.map((job, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -155,12 +159,30 @@ const ResearchResults: React.FC<ResearchResultsProps> = ({ results, searchData }
           ))}
         </div>
         
-        {/* Show More Jobs Message */}
-        {results.job_postings.length > 10 && (
+        {/* Show More/Less Jobs Button */}
+        {hasMoreJobs && (
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Showing 10 of {results.job_postings.length} job postings. 
-              <span className="text-blue-600 font-medium"> More detailed analysis above covers all {results.job_postings.length} jobs.</span>
+            <button
+              onClick={() => setShowAllJobs(!showAllJobs)}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {showAllJobs ? (
+                <>
+                  Show Less Jobs
+                  <ChevronUp className="ml-2 w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  Show All {results.job_postings.length} Jobs
+                  <ChevronDown className="ml-2 w-5 h-5" />
+                </>
+              )}
+            </button>
+            <p className="text-sm text-gray-600 mt-2">
+              {showAllJobs 
+                ? `Showing all ${results.job_postings.length} job postings`
+                : `Showing 10 of ${results.job_postings.length} job postings`
+              }
             </p>
           </div>
         )}

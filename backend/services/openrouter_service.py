@@ -228,6 +228,15 @@ class OpenRouterService:
                     clean_line = line.strip('1234567890. "')
                     if clean_line:
                         recommendations.append(clean_line)
+            
+            # If still empty and response looks like a JSON array, try parsing it directly
+            if not recommendations and response.strip().startswith('['):
+                try:
+                    parsed = json.loads(response.strip().rstrip('...'))
+                    if isinstance(parsed, list):
+                        recommendations = parsed[:5]
+                except Exception:
+                    pass
             return recommendations[:5]  # Limit to 5 recommendations
     
     def _extract_json_from_response(self, response: str) -> Optional[Dict[str, Any]]:

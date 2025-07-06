@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Search, TrendingUp, Users, MapPin, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, TrendingUp, Users, MapPin, DollarSign, Clock, CheckCircle, AlertCircle, Linkedin, Github } from 'lucide-react';
 import JobSearchForm from '@/components/JobSearchForm';
 import ResearchResults from '@/components/ResearchResults';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -14,7 +14,28 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [researchId, setResearchId] = useState<string | null>(null);
 
-  const { startResearch, getResearchStatus, getResearchResults } = useJobResearch();
+  const { startResearch, getResearchStatus, getResearchResults, checkApiHealth } = useJobResearch();
+
+  // API health status: true = online, false = offline, null = unknown/loading
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+
+  // Poll API health every 30 seconds
+  useEffect(() => {
+    const pollHealth = async () => {
+      try {
+        await checkApiHealth();
+        setApiOnline(true);
+      } catch (err) {
+        setApiOnline(false);
+      }
+    };
+
+    // Initial check
+    pollHealth();
+
+    const intervalId = setInterval(pollHealth, 30000); // 30-second interval
+    return () => clearInterval(intervalId);
+  }, [checkApiHealth]);
 
   const handleSearch = async (formData: JobResearchRequest) => {
     setIsLoading(true);
@@ -110,15 +131,26 @@ export default function Home() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">Job Research AI</h1>
-                  <p className="text-sm text-gray-500">Intelligent job market analysis</p>
+                  <p className="text-sm text-gray-500">Smart job search powered by AI</p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>API Online</span>
+                    {/* Status dot */}
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        apiOnline === null
+                          ? 'bg-yellow-400'
+                          : apiOnline
+                          ? 'bg-green-500'
+                          : 'bg-red-500'
+                      }`}
+                    ></div>
+                    <span>
+                      {apiOnline === null ? 'Checking API...' : apiOnline ? 'API Online' : 'API Offline'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -136,34 +168,36 @@ export default function Home() {
                   Discover Your Next Career Opportunity
                 </h2>
                 <p className="text-xl text-gray-600 mb-8">
-                  AI-powered job research that analyzes market trends, salary expectations, 
+                  AI-powered job research that analyzes job postings, salary expectations, 
                   and provides personalized recommendations for your career journey.
                 </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                    <TrendingUp className="w-8 h-8 text-blue-600 mb-3 mx-auto" />
-                    <h3 className="font-semibold text-gray-900 mb-2">Market Analysis</h3>
-                    <p className="text-sm text-gray-600">Real-time job market trends and insights</p>
+
+                {/* New Filters Coming Soon Note */}
+                <div className="max-w-2xl mx-auto bg-yellow-50 border border-yellow-200 rounded-xl shadow-sm p-6 text-center">
+                  {/* Centered Icon */}
+                  <div className="flex justify-center mb-4">
+                    <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
                   </div>
-                  
-                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                    <DollarSign className="w-8 h-8 text-green-600 mb-3 mx-auto" />
-                    <h3 className="font-semibold text-gray-900 mb-2">Salary Intel</h3>
-                    <p className="text-sm text-gray-600">Compensation analysis and benchmarking</p>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                    <Users className="w-8 h-8 text-purple-600 mb-3 mx-auto" />
-                    <h3 className="font-semibold text-gray-900 mb-2">Company Insights</h3>
-                    <p className="text-sm text-gray-600">Deep dive into company culture and growth</p>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-                    <CheckCircle className="w-8 h-8 text-indigo-600 mb-3 mx-auto" />
-                    <h3 className="font-semibold text-gray-900 mb-2">AI Recommendations</h3>
-                    <p className="text-sm text-gray-600">Personalized career guidance and tips</p>
-                  </div>
+
+                  {/* Heading */}
+                  <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                    New Filters Coming Soon
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-sm text-yellow-700">
+                    We're actively working on advanced filters like <span className="font-medium">experience level</span>, 
+                    <span className="font-medium"> salary range</span>, and <span className="font-medium">job type</span>. 
+                    For now, search using <span className="font-medium">job title</span> and <span className="font-medium">location</span> for best results.
+                  </p>
+
+                  <p className="text-sm text-yellow-700 mt-2">
+                    <strong>Note:</strong> This AI Agent is powered by DeepSeek and SerpAPI. You may experience slight delays during high-load periods.
+                  </p>
                 </div>
               </div>
             </div>
@@ -173,6 +207,59 @@ export default function Home() {
           <div className="mb-8">
             <JobSearchForm onSubmit={handleSearch} isLoading={isLoading} />
           </div>
+
+          {/* Intro Card below Search Form */}
+          {!searchData && !isLoading && !results && (
+            <div className="flex flex-col items-center space-y-4 mb-12 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <h3 className="text-2xl font-bold text-gray-800 text-center mb-2">
+                Behind the Agent: Developer Profile
+              </h3>
+              <p className="text-lg text-gray-700 mb-6 max-w-2xl mx-auto text-center">
+                Hello, I'm <span className="font-semibold">Yuva Prakash Sai Gunupuru</span> — a full-stack developer and competitive programmer.
+                I build scalable digital solutions and intelligent AI&nbsp;Agents powered by LLMs.
+                Passionate about crafting clean code, automating tasks, and solving real-world problems.
+              </p>
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center sm:space-x-4 space-y-4 sm:space-y-0 mt-6">
+                {/* Portfolio Button */}
+                <a
+                  href="https://yuvaprakashsai-portfolio.web.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-all duration-200"
+                >
+                  Visit My Portfolio
+                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+
+                {/* LinkedIn Button */}
+                <a
+                  href="https://www.linkedin.com/in/yuvaprakashsai-gunupuru/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-[#0A66C2] text-white text-lg font-medium rounded-lg hover:bg-[#004182] transition-all duration-200"
+                >
+                  Connect on LinkedIn
+                  <Linkedin className="ml-2 w-5 h-5" />
+                </a>
+
+                {/* GitHub Button */}
+                <a 
+                  href="https://github.com/Yuvaprakash24"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-gray-800 text-white text-lg font-medium rounded-lg hover:bg-gray-700 transition-all duration-200"
+                >
+                  GitHub Workspace 
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" className="bi bi-github ml-3" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* Loading State */}
           {isLoading && (
@@ -234,7 +321,7 @@ export default function Home() {
         <footer className="bg-white border-t border-gray-200 mt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center text-gray-600">
-              <p>&copy; 2024 Job Research AI Agent. Powered by Langgraph, SerpAPI, and OpenRouter.</p>
+              <p>&copy; 2025 Job Research AI Agent - Developed by Yuva Prakash Sai Gunupuru. All rights reserved.</p>
             </div>
           </div>
         </footer>
